@@ -35,7 +35,12 @@ Fase UI/UX RnD. Semua percobaan, error, dan keputusan dicatat di sini (English u
 3. **Deploy auth**: `wrangler whoami` -> not authenticated. Pivoted to GitHub Pages deploy (gh CLI authed as dudevkit).
 
 ### Feedback loop (next)
-- Wait for Ravi's comments on v0.1. Then: adjust layout, tokens, motion intensity, or content. Bump to v0.2 in new folder.
+- v0.1 deployed to GitHub Pages: https://dudevkit.github.io/command-center/demo/v0.1/
+- Waiting on Ravi's visual comments. Then adjust layout/tokens/motion/content. Bump to v0.2 in new folder.
+- Headless browser smoke test NOT possible on gateway (storage policy bans Playwright/Chromium install without approval, and there's no browser binary). Used `node --check` for JS syntax + curl HTTP 200 + anime lib parse instead. Ravi evaluates visually in real browser.
+
+### Gateway cleanup (unrelated, same session)
+- Root was 90% full (699M free). Cleaned caches (apt/npm/uv/journal), stale /tmp, rotated Hermes logs + /var/log.hdd, stale backup mounts (~110M). With Ravi approval removed: /DATA/AppData (n8n/pihole/gowa), /opt/obscura, hcaptcha-practice/.venv. Now 83% (1.2G free).
 
 ---
 

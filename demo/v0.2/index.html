@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COMMAND CENTER // v0.2</title>
+<style>
+:root{
+  --bg:#09090b;--s1:#131316;--s2:#18181b;--s3:#202024;
+  --line:rgba(255,255,255,.07);--line-strong:rgba(255,255,255,.14);
+  --tx:#fafafa;--tx2:#a1a1aa;--tx3:#52525b;
+  --accent:#22d3ee;--ok:#34d399;--warn:#f59e0b;--danger:#f87171;
+  --mono:"IBM Plex Mono","SFMono-Regular",Consolas,"Liberation Mono",monospace;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--tx);font-family:var(--sans);font-size:13px;-webkit-font-smoothing:antialiased;overflow:hidden;height:100vh}
+.mono{font-family:var(--mono)}
+::selection{background:rgba(34,211,238,.25)}
+
+/* ===== APP SHELL ===== */
+.app{display:grid;grid-template-columns:230px 1fr;height:100vh}
+
+/* ===== SIDEBAR (menu ala game) ===== */
+.sidebar{border-right:1px solid var(--line);background:var(--bg);display:flex;flex-direction:column;padding:16px 12px;gap:2px;user-select:none}
+.sidebar .logo{display:flex;align-items:center;gap:10px;padding:4px 8px 16px;border-bottom:1px solid var(--line);margin-bottom:10px}
+.logo .mark{width:16px;height:16px;border:1.5px solid var(--tx);transform:rotate(45deg);position:relative;flex:none}
+.logo .mark::after{content:"";position:absolute;inset:3px;border:1px solid var(--accent)}
+.logo .brand{font-weight:700;letter-spacing:.12em;font-size:11px;line-height:1.2}
+.logo .brand small{display:block;font-family:var(--mono);font-weight:400;font-size:8.5px;color:var(--tx3);letter-spacing:.1em}
+.menu-group{font-family:var(--mono);font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--tx3);padding:14px 10px 5px}
+.menu-item{
+  display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:7px;cursor:pointer;
+  color:var(--tx2);font-size:12px;border:1px solid transparent;transition:background .12s,color .12s;
+}
+.menu-item:hover{color:var(--tx);background:var(--s1)}
+.menu-item.sel{color:var(--tx);background:var(--s1);border-color:var(--line)}
+.menu-item.sel .ic{color:var(--accent)}
+.menu-item .ic{width:16px;text-align:center;flex:none;font-size:12px;opacity:.85}
+.menu-item .count{margin-left:auto;font-family:var(--mono);font-size:9.5px;color:var(--tx3)}
+.menu-item .count.bad{color:var(--warn)}
+.sidebar .foot{margin-top:auto;padding:12px 10px 4px;border-top:1px solid var(--line);font-family:var(--mono);font-size:9px;color:var(--tx3);display:flex;justify-content:space-between}
+.sidebar .foot .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);display:inline-block;vertical-align:middle;margin-right:5px}
+
+/* ===== MAIN ===== */
+.main{display:flex;flex-direction:column;min-width:0}
+.topbar{display:flex;align-items:center;gap:14px;padding:0 18px;height:52px;border-bottom:1px solid var(--line);background:rgba(9,9,11,.85);backdrop-filter:blur(8px);user-select:none;flex:none}
+.topbar .crumb{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--tx3)}
+.topbar .crumb .sep{color:var(--tx3)}
+.topbar .crumb .cur{color:var(--tx)}
+.topbar .spacer{flex:1}
+.pill{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border:1px solid var(--line-strong);border-radius:999px;color:var(--tx2);display:inline-flex;align-items:center;gap:6px;background:var(--s1)}
+.pill .dot{width:5px;height:5px;border-radius:50%;background:var(--ok)}
+.clock{font-family:var(--mono);font-size:11.5px;color:var(--tx2);min-width:96px;text-align:right}
+.kbd{font-family:var(--mono);font-size:9px;border:1px solid var(--line-strong);border-radius:5px;padding:2px 6px;color:var(--tx3);background:var(--s1);cursor:pointer}
+
+/* ===== SCREEN SYSTEM (menu game) ===== */
+.stage{flex:1;overflow-y:auto;position:relative}
+.screen{display:none;padding:22px 24px;max-width:1100px}
+.screen.active{display:block}
+.screen-head{display:flex;align-items:baseline;gap:12px;margin-bottom:18px}
+.screen-head h1{font-size:20px;font-weight:700;letter-spacing:-.02em}
+.screen-head .sub{font-family:var(--mono);font-size:10px;color:var(--tx3);letter-spacing:.06em}
+.screen-head .spacer{flex:1}
+
+/* home hub tiles (menu ala game) */
+.hub{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:22px}
+.hub-tile{
+  background:var(--s1);border:1px solid var(--line);border-radius:10px;padding:14px;
+  cursor:pointer;transition:border-color .12s,background .12s;position:relative;overflow:hidden;
+  display:flex;flex-direction:column;gap:8px;min-height:84px;
+}
+.hub-tile:hover{border-color:var(--line-strong);background:var(--s2)}
+.hub-tile:active{transform:scale(.985)}
+.hub-tile .t-ic{font-size:16px;color:var(--tx2)}
+.hub-tile .t-name{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx)}
+.hub-tile .t-meta{font-family:var(--mono);font-size:10px;color:var(--tx3)}
+.hub-tile .t-badge{position:absolute;top:10px;right:10px}
+
+/* tables */
+.tbl{background:var(--s1);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.tbl table{width:100%;border-collapse:collapse}
+.tbl th{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);font-weight:500}
+.tbl td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl .row-sys{font-family:var(--mono);font-size:11px;color:var(--tx)}
+.tbl .row-sub{font-family:var(--mono);font-size:9.5px;color:var(--tx3);margin-top:2px}
+.tbl .num{font-family:var(--mono);text-align:right;color:var(--tx2)}
+.tbl tr.clickable{cursor:pointer;transition:background .12s}
+.tbl tr.clickable:hover{background:var(--s2)}
+.status{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:999px;border:1px solid;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.status.live{color:var(--ok);border-color:rgba(52,211,153,.3);background:rgba(52,211,153,.08)}
+.status.warn{color:var(--warn);border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.08)}
+.status.err{color:var(--danger);border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.08)}
+.status.idle{color:var(--tx3);border-color:var(--line-strong);background:var(--s1)}
+.status .dot{width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block}
+.progressbar{display:flex;align-items:center;gap:10px}
+.progressbar .track{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.07);overflow:hidden;min-width:80px}
+.progressbar .fill{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--ok));border-radius:3px}
+.progressbar .pct{font-family:var(--mono);font-size:10px;color:var(--tx2);min-width:34px;text-align:right}
+
+/* action buttons */
+.btn{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;padding:5px 11px;border-radius:6px;border:1px solid var(--line-strong);background:var(--s2);color:var(--tx2);cursor:pointer;transition:background .12s,color .12s,border-color .12s}
+.btn:hover{color:var(--tx);background:var(--s3);border-color:var(--line-strong)}
+.btn.primary{background:var(--tx);color:#09090b;border-color:var(--tx);font-weight:600}
+.btn.primary:hover{background:#e4e4e7}
+.btn.danger{color:var(--danger);border-color:rgba(248,113,113,.3)}
+.btn.danger:hover{background:rgba(248,113,113,.1)}
+.btn:active{transform:scale(.97)}
+
+/* detail drawer (right pane) */
+.drawer-wrap{position:fixed;inset:0;pointer-events:none;z-index:30}
+.drawer-bg{position:absolute;inset:0;background:rgba(0,0,0,.5);opacity:0;transition:opacity .15s}
+.drawer{position:absolute;right:0;top:0;bottom:0;width:400px;max-width:92vw;background:#0f0f12;border-left:1px solid var(--line-strong);transform:translateX(100%);padding:18px;overflow-y:auto}
+.drawer.open .drawer-bg{opacity:1;pointer-events:auto}
+.drawer.open .drawer{transform:translateX(0)}
+.drawer-head{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.drawer-head h2{font-size:15px;font-weight:600}
+.drawer-head .close{margin-left:auto;cursor:pointer;color:var(--tx3);font-size:18px;padding:0 4px}
+.drawer-head .close:hover{color:var(--tx)}
+.drawer .d-row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px}
+.drawer .d-row .k{font-family:var(--mono);font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em}
+.drawer .d-row .v{font-family:var(--mono);color:var(--tx2)}
+.drawer .d-actions{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap}
+.drawer .spark{width:100%;height:44px;margin:10px 0 4px}
+
+/* modal confirm */
+.modal-wrap{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:50}
+.modal-wrap.open{display:flex}
+.modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.6)}
+.modal{position:relative;background:#101013;border:1px solid var(--line-strong);border-radius:12px;padding:20px;width:360px;max-width:92vw;box-shadow:0 24px 80px rgba(0,0,0,.6)}
+.modal h3{font-size:14px;font-weight:600;margin-bottom:8px}
+.modal p{color:var(--tx2);font-size:12px;margin-bottom:16px;line-height:1.5}
+.modal .m-actions{display:flex;justify-content:flex-end;gap:8px}
+
+/* toast */
+.toast-wrap{position:fixed;bottom:18px;right:18px;z-index:70;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:#101013;border:1px solid var(--line-strong);border-radius:9px;padding:11px 14px;font-family:var(--mono);font-size:11px;color:var(--tx2);display:flex;gap:9px;align-items:center;box-shadow:0 10px 34px rgba(0,0,0,.5);max-width:340px}
+.toast .t-ic{color:var(--accent);font-size:12px}
+.toast .t-msg{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* keyframes / scroll */
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:4px}
+::-webkit-scrollbar-track{background:transparent}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="mark"></div>
+      <div class="brand">COMMAND<br>CENTER<small>v0.2 · menu-rnd</small></div>
+    </div>
+
+    <div class="menu-group">System</div>
+    <div class="menu-item sel" data-menu="home"><span class="ic">&#9632;</span>Home<span class="count">hub</span></div>
+    <div class="menu-item" data-menu="overview"><span class="ic">&#9776;</span>Overview</div>
+
+    <div class="menu-group">Operations</div>
+    <div class="menu-item" data-menu="farms"><span class="ic">&#9651;</span>Farms<span class="count bad">2</span></div>
+    <div class="menu-item" data-menu="network"><span class="ic">&#8645;</span>Network<span class="count">42</span></div>
+    <div class="menu-item" data-menu="gateways"><span class="ic">&#8743;</span>Gateways<span class="count">3</span></div>
+
+    <div class="menu-group">Infra</div>
+    <div class="menu-item" data-menu="hosts"><span class="ic">&#9637;</span>Hosts<span class="count">5</span></div>
+    <div class="menu-item" data-menu="settings"><span class="ic">&#9881;</span>Settings</div>
+
+    <div class="foot"><span><span class="dot"></span>all nominal</span><span>ctrl K</span></div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="crumb"><span>COMMAND CENTER</span><span class="sep">/</span><span class="cur" id="crumb-cur">Home</span></div>
+      <div class="spacer"></div>
+      <span class="pill"><span class="dot"></span>live</span>
+      <span class="kbd" id="kbd-open">CTRL K</span>
+      <div class="clock mono" id="clock">--:--:-- WIB</div>
+    </div>
+
+    <div class="stage" id="stage">
+
+      <!-- HOME (hub ala game) -->
+      <section class="screen active" data-screen="home">
+        <div class="screen-head">
+          <h1>Home</h1>
+          <span class="sub">command hub · pilih menu</span>
+          <span class="spacer"></span>
+        </div>
+        <div class="hub" id="hub"></div>
+        <div class="tbl">
+          <table>
+            <thead><tr><th>System</th><th>Status</th><th style="text-align:right">Key metric</th><th style="text-align:right">Last event</th></tr></thead>
+            <tbody id="home-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- OVERVIEW -->
+      <section class="screen" data-screen="overview">
+        <div class="screen-head"><h1>Overview</h1><span class="sub">all systems · snapshot</span><span class="spacer"></span></div>
+        <div class="tbl"><table><thead><tr><th>System</th><th>Group</th><th>Status</th><th style="text-align:right">Metric</th><th style="text-align:right">Uptime</th></tr></thead><tbody id="overview-body"></tbody></table></div>
+      </section>
+
+      <!-- FARMS -->
+      <section class="screen" data-screen="farms">
+        <div class="screen-head"><h1>Farms</h1><span class="sub">batch & harvest</span><span class="spacer"></span><button class="btn" data-toast="farm trigger queued">Trigger Batch</button></div>
+        <div class="tbl"><table><thead><tr><th>Farm</th><th>Status</th><th>Progress</th><th style="text-align:right">Yield</th><th style="text-align:right">ETA</th></tr></thead><tbody id="farms-body"></tbody></table></div>
+      </section>
+
+      <!-- NETWORK -->
+      <section class="screen" data-screen="network">
+        <div class="screen-head"><h1>Network</h1><span class="sub">proxy pool & egress</span><span class="spacer"></span><button class="btn primary" data-confirm="rotate">Rotate Egress</button></div>
+        <div class="tbl"><table><thead><tr><th>Pool</th><th>Status</th><th>Alive</th><th style="text-align:right">Egress</th><th style="text-align:right">Health</th></tr></thead><tbody id="network-body"></tbody></table></div>
+      </section>
+
+      <!-- GATEWAYS -->
+      <section class="screen" data-screen="gateways">
+        <div class="screen-head"><h1>Gateways</h1><span class="sub">api ingress</span><span class="spacer"></span></div>
+        <div class="tbl"><table><thead><tr><th>Gateway</th><th>Status</th><th style="text-align:right">Keys / Routes</th><th style="text-align:right">Latency</th></tr></thead><tbody id="gateways-body"></tbody></table></div>
+      </section>
+
+      <!-- HOSTS -->
+      <section class="screen" data-screen="hosts">
+        <div class="screen-head"><h1>Hosts</h1><span class="sub">vps fleet</span><span class="spacer"></span></div>
+        <div class="tbl"><table><thead><tr><th>Host</th><th>Status</th><th style="text-align:right">CPU</th><th style="text-align:right">Mem</th><th style="text-align:right">Disk</th><th>Load</th></tr></thead><tbody id="hosts-body"></tbody></table></div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="screen" data-screen="settings">
+        <div class="screen-head"><h1>Settings</h1><span class="sub">preferences</span><span class="spacer"></span></div>
+        <div class="tbl" style="max-width:560px">
+          <table>
+            <tbody id="settings-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL DRAWER -->
+<div class="drawer-wrap" id="drawer-wrap">
+  <div class="drawer-bg" id="drawer-bg"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-head"><h2 id="drawer-title">Detail</h2><span class="close" id="drawer-close">&#10005;</span></div>
+    <div id="drawer-body"></div>
+  </aside>
+</div>
+
+<!-- MODAL -->
+<div class="modal-wrap" id="modal-wrap">
+  <div class="modal-bg" id="modal-bg"></div>
+  <div class="modal">
+    <h3 id="modal-title">Confirm</h3>
+    <p id="modal-text">Are you sure?</p>
+    <div class="m-actions"><button class="btn" id="modal-cancel">Cancel</button><button class="btn danger" id="modal-ok">Confirm</button></div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script src="./lib/anime.min.js"></script>
+<script>
+/* ============ MOCK DATA ============ */
+const SYSTEMS=[
+  {id:'router',grp:'gateways',name:'9Router',status:'live',metric:'1,931',unit:'keys',sub:'key pool',last:'key add ok · 12s'},
+  {id:'grok',  grp:'farms',name:'Grok Pool',status:'live',metric:'1930',unit:'/1931',sub:'quota sweep',last:'sweep done · 41s'},
+  {id:'mist',  grp:'farms',name:'Mist Farm',status:'live',metric:'603',unit:'keys',sub:'batch 12 done',last:'100% verified · 2m'},
+  {id:'rail',  grp:'farms',name:'Rail Farm',status:'warn',metric:'4',unit:'accts',sub:'quota 6/IP',last:'rotate due · 3m'},
+  {id:'proxy', grp:'network',name:'Proxy Pool',status:'live',metric:'42',unit:'/48',sub:'egress 5',last:'health ok · 21s'},
+  {id:'warp',  grp:'network',name:'Warp Egress',status:'warn',metric:'5',unit:'nodes',sub:'1 degraded',last:'node slow · 55s'},
+  {id:'sub',   grp:'gateways',name:'Sub2API',status:'live',metric:'23',unit:'routes',sub:'p50 120ms',last:'route sync · 8s'},
+  {id:'free',  grp:'gateways',name:'FreeBuff',status:'live',metric:'1,042',unit:'req',sub:'p99 410ms',last:'upstream ok · 33s'},
+  {id:'bot',   grp:'gateways',name:'Boterdrop',status:'live',metric:'OK',unit:'',sub:'queue 3',last:'health 200 · 15s'},
+  {id:'dude',  grp:'hosts',name:'Host D',status:'live',metric:'23%',unit:'cpu',sub:'mem 41%',last:'load nominal · 9s'},
+  {id:'suki',  grp:'hosts',name:'Host S',status:'idle',metric:'11%',unit:'cpu',sub:'mem 29%',last:'idle · 1m'},
+  {id:'shop',  grp:'shop',name:'Crosslist',status:'live',metric:'3',unit:'items',sub:'sync ok',last:'sku sync · 4m'},
+];
+const FARMS=[
+  {name:'Mist Farm',status:'live',prog:100,unit:603,yield:'603 keys',eta:'done'},
+  {name:'Grok Pool',status:'live',prog:99,unit:1930,yield:'1,930 warm',eta:'live'},
+  {name:'Rail Farm',status:'warn',prog:64,unit:4,yield:'4 accts',eta:'12m'},
+  {name:'Crosslist',status:'live',prog:91,unit:3,yield:'3 items',eta:'~4m'},
+];
+const NETWORK=[
+  {name:'Proxy Pool',status:'live',alive:'42/48',egress:'5',health:'99.4%'},
+  {name:'Warp Egress',status:'warn',alive:'4/5',egress:'4',health:'99.2%'},
+  {name:'Relay',status:'live',alive:'12/12',egress:'1',health:'100%'},
+];
+const GATEWAYS=[
+  {name:'9Router',status:'live',keys:'1,931 keys',lat:'38ms'},
+  {name:'Sub2API',status:'live',keys:'23 routes',lat:'120ms'},
+  {name:'FreeBuff',status:'live',keys:'1,042 req',lat:'410ms'},
+  {name:'Boterdrop',status:'live',keys:'queue 3',lat:'--'},
+];
+const HOSTS=[
+  {name:'Host D',status:'live',cpu:23,mem:41,disk:83,load:'nominal'},
+  {name:'Host S',status:'idle',cpu:11,mem:29,disk:61,load:'idle'},
+  {name:'Host B',status:'live',cpu:34,mem:52,disk:44,load:'normal'},
+  {name:'Host T',status:'live',cpu:18,mem:38,disk:57,load:'normal'},
+  {name:'Host W',status:'warn',cpu:71,mem:66,disk:12,load:'busy'},
+];
+
+/* ============ HELPERS ============ */
+const $=s=>document.querySelector(s);
+const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function nowStr(){return new Date().toLocaleTimeString('en-GB',{timeZone:'Asia/Jakarta',hour12:false})}
+setInterval(()=>$('#clock').textContent=nowStr()+' WIB',1000);
+$('#clock').textContent=nowStr()+' WIB';
+function statusPill(s){const m={live:['live',''],warn:['warn',''],err:['err',''],idle:['idle','']};const[cls]=m[s]||m.idle;return `<span class="status ${cls}"><span class="dot"></span>${s}</span>`}
+function sparkSVG(data){
+  const w=160,h=40,pad=2,max=Math.max(...data),min=Math.min(...data);
+  const pts=data.map((v,i)=>{const x=pad+(w-2*pad)*(i/(data.length-1));const y=h-pad-((v-min)/(max-min||1))*(h-2*pad);return `${x.toFixed(1)},${y.toFixed(1)}`}).join(' ');
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" fill="none"><polyline points="${pts}" stroke="rgba(255,255,255,.35)" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${pts.split(' ').pop().split(',')[0]}" cy="${pts.split(' ').pop().split(',')[1]}" r="2.2" fill="rgba(255,255,255,.7)"/></svg>`;
+}
+const sparkData=n=>Array.from({length:12},(_,i)=>40+Math.sin(i*0.9+n)*28+Math.random()*10);
+
+/* ============ RENDER ============ */
+function renderHome(){
+  const groups=[['farms','Farms','2 active'],['network','Network','42 alive'],['gateways','Gateways','3 online'],['hosts','Hosts','5 tracked']];
+  $('#hub').innerHTML=groups.map(([m,n,d])=>`<div class="hub-tile" data-nav="${m}"><span class="t-ic">${m==='farms'?'&#9651;':m==='network'?'&#8645;':m==='gateways'?'&#8743;':'&#9637;'}</span><div><div class="t-name">${n}</div><div class="t-meta">${d}</div></div></div>`).join('');
+  $('#home-table').innerHTML=SYSTEMS.slice(0,6).map(s=>`<tr class="clickable" data-open="${s.id}"><td><div class="row-sys">${s.name}</div><div class="row-sub">${s.sub}</div></td><td>${statusPill(s.status)}</td><td class="num">${s.metric} <span style="color:var(--tx3)">${s.unit}</span></td><td class="num" style="color:var(--tx3);font-size:11px">${s.last}</td></tr>`).join('');
+}
+function renderOverview(){
+  $('#overview-body').innerHTML=SYSTEMS.map(s=>`<tr class="clickable" data-open="${s.id}"><td><div class="row-sys">${s.name}</div><div class="row-sub">${s.grp}</div></td><td>${s.grp}</td><td>${statusPill(s.status)}</td><td class="num">${s.metric} ${s.unit}</td><td class="num">99.2%</td></tr>`).join('');
+}
+function renderFarms(){
+  $('#farms-body').innerHTML=FARMS.map((f,i)=>`<tr><td><div class="row-sys">${f.name}</div></td><td>${statusPill(f.status)}</td><td><div class="progressbar"><span class="track"><i class="fill" data-w="${f.prog}"></i></span><span class="pct" data-p="${f.prog}">0%</span></div></td><td class="num">${f.yield}</td><td class="num" style="color:var(--tx3)">${f.eta}</td></tr>`).join('');
+  document.querySelectorAll('.fill').forEach(el=>{
+    const pct=el.parentElement.querySelector('.pct');
+    if(reduced){el.style.width=el.dataset.w+'%';pct.textContent=el.dataset.w+'%';return;}
+    el.style.width='0%';el.style.width=null;
+    anime({targets:el,width:[0,el.dataset.w+'%'],duration:900,easing:'easeOutQuart',delay:250+Math.random()*200,update:a=>{pct.textContent=Math.round(a.progress*parseInt(el.dataset.w))+'%'}});
+  });
+}
+function renderNetwork(){
+  $('#network-body').innerHTML=NETWORK.map(n=>`<tr><td><div class="row-sys">${n.name}</div></td><td>${statusPill(n.status)}</td><td class="num">${n.alive}</td><td class="num">${n.egress}</td><td class="num">${n.health}</td></tr>`).join('');
+}
+function renderGateways(){
+  $('#gateways-body').innerHTML=GATEWAYS.map(g=>`<tr class="clickable" data-open="${g.name.toLowerCase().replace('9','')}"><td><div class="row-sys">${g.name}</div></td><td>${statusPill(g.status)}</td><td class="num">${g.keys}</td><td class="num">${g.lat}</td></tr>`).join('');
+}
+function renderHosts(){
+  $('#hosts-body').innerHTML=HOSTS.map(h=>`<tr><td><div class="row-sys">${h.name}</div></td><td>${statusPill(h.status)}</td><td class="num">${h.cpu}%</td><td class="num">${h.mem}%</td><td class="num">${h.disk}%</td><td><span style="font-family:var(--mono);font-size:11px;color:var(--tx3)">${h.load}</span></td></tr>`).join('');
+}
+function renderSettings(){
+  const rows=[['Theme','Dark · monochrome'],['Refresh interval','4s'],['Command palette','CTRL K · enabled'],['Notifications','Telegram topic · on'],['Retention','events 7d']];
+  $('#settings-body').innerHTML=rows.map(([k,v])=>`<tr><td style="width:45%"><span style="color:var(--tx2)">${k}</span></td><td class="num"><button class="btn" data-toast="${k} cycling">${v}</button></td></tr>`).join('');
+}
+
+/* ============ NAVIGATION (menu game) ============ */
+const MENU_NAMES={home:'Home',overview:'Overview',farms:'Farms',network:'Network',gateways:'Gateways',hosts:'Hosts',settings:'Settings'};
+function showScreen(name,animate=true){
+  document.querySelectorAll('.menu-item').forEach(i=>i.classList.toggle('sel',i.dataset.menu===name));
+  const cur=$('.screen.active'),next=document.querySelector(`.screen[data-screen="${name}"]`);
+  if(!next||next===cur)return;
+  $('#crumb-cur').textContent=MENU_NAMES[name]||name;
+  if(animate&&!reduced){
+    anime({targets:cur,opacity:[1,0],translateY:[0,-8],duration:140,easing:'easeOutQuad',complete:()=>{
+      cur.classList.remove('active');next.classList.add('active');next.style.opacity=0;next.style.transform='translateY(8px)';
+      anime({targets:next,opacity:[0,1],translateY:[8,0],duration:260,easing:'easeOutExpo'});
+    }});
+  }else{
+    cur.classList.remove('active');next.classList.add('active');next.style.opacity=1;next.style.transform='none';
+  }
+}
+document.querySelectorAll('.menu-item').forEach(it=>it.addEventListener('click',()=>showScreen(it.dataset.menu)));
+document.getElementById('hub').addEventListener('click',e=>{const t=e.target.closest('.hub-tile');if(t)showScreen(t.dataset.nav)});
+document.getElementById('home-table').addEventListener('click',e=>{const t=e.target.closest('tr');if(t&&t.dataset.open)openDrawer(t.dataset.open)});
+document.getElementById('overview-body').addEventListener('click',e=>{const t=e.target.closest('tr');if(t&&t.dataset.open)openDrawer(t.dataset.open)});
+document.getElementById('gateways-body').addEventListener('click',e=>{const t=e.target.closest('tr');if(t&&t.dataset.open)openDrawer(t.dataset.open)});
+
+/* ============ DRAWER ============ */
+function openDrawer(id){
+  const s=SYSTEMS.find(x=>x.id===id);if(!s)return;
+  $('#drawer-title').textContent=s.name;
+  $('#drawer-body').innerHTML=`
+    ${sparkSVG(sparkData(id.length))}
+    <div class="d-row"><span class="k">status</span><span class="v">${s.status}</span></div>
+    <div class="d-row"><span class="k">group</span><span class="v">${s.grp}</span></div>
+    <div class="d-row"><span class="k">metric</span><span class="v">${s.metric} ${s.unit}</span></div>
+    <div class="d-row"><span class="k">last event</span><span class="v">${s.last}</span></div>
+    <div class="d-row"><span class="k">config path</span><span class="v" style="font-size:10px">ops/${s.id}.yml</span></div>
+    <div class="d-actions">
+      <button class="btn" data-toast="${s.name} logs refreshed">View Logs</button>
+      <button class="btn" data-toast="${s.name} restart queued">Restart</button>
+      <button class="btn danger" data-confirm="${s.name}">Stop</button>
+    </div>`;
+  $('#drawer-wrap').classList.add('open');
+  if(!reduced)anime({targets:'#drawer-bg',opacity:[0,.5],duration:150,easing:'linear'});
+  if(!reduced)anime({targets:'#drawer',translateX:['100%','0%'],duration:300,easing:'easeOutExpo'});
+}
+$('#drawer-close').addEventListener('click',closeDrawer);
+$('#drawer-bg').addEventListener('click',closeDrawer);
+function closeDrawer(){
+  $('#drawer-wrap').classList.remove('open');
+  if(!reduced)anime({targets:'#drawer',translateX:['0%','100%'],duration:240,easing:'easeInQuad'});
+}
+
+/* ============ MODAL ============ */
+let modalAction=null;
+function openModal(title,text,onOk){
+  modalAction=onOk;$('#modal-title').textContent=title;$('#modal-text').textContent=text;
+  $('#modal-wrap').classList.add('open');
+  if(!reduced)anime({targets:'#modal-wrap',opacity:[0,1],duration:150,easing:'linear'});
+}
+$('#modal-cancel').addEventListener('click',()=>{$('#modal-wrap').classList.remove('open');modalAction=null});
+$('#modal-bg').addEventListener('click',()=>{$('#modal-wrap').classList.remove('open');modalAction=null});
+$('#modal-ok').addEventListener('click',()=>{$('#modal-wrap').classList.remove('open');if(modalAction)modalAction();modalAction=null});
+
+/* ============ TOAST ============ */
+function toast(msg){
+  const t=document.createElement('div');t.className='toast';t.innerHTML=`<span class="t-ic">&#10003;</span><span class="t-msg">${msg}</span>`;
+  $('#toast-wrap').appendChild(t);
+  if(!reduced)anime({targets:t,translateY:[12,0],opacity:[0,1],duration:240,easing:'easeOutQuad'});
+  setTimeout(()=>{if(!reduced)anime({targets:t,opacity:[1,0],translateY:[0,-6],duration:200,easing:'easeInQuad',complete:()=>t.remove()});else t.remove();},2600);
+}
+
+/* delegated actions */
+document.addEventListener('click',e=>{
+  const ok=e.target.closest('[data-toast]');
+  if(ok){toast(ok.dataset.toast);return;}
+  const cf=e.target.closest('[data-confirm]');
+  if(cf){openModal('Confirm action',`Run "${cf.dataset.confirm}"? This is a demo - action will be logged only.`,()=>toast(`${cf.dataset.confirm} executed (demo)`));return;}
+});
+
+/* ============ INIT ============ */
+renderHome();renderOverview();renderFarms();renderNetwork();renderGateways();renderHosts();renderSettings();
+
+if(!reduced){
+  anime.timeline({easing:'easeOutExpo'})
+    .add({targets:'.sidebar',translateX:[-16,0],opacity:[0,1],duration:400},0)
+    .add({targets:'.menu-item',translateX:[-8,0],opacity:[0,1],duration:350,delay:anime.stagger(28,{start:80})},0)
+    .add({targets:'.topbar',translateY:[-10,0],opacity:[0,1],duration:400},0)
+    .add({targets:'.hub-tile',translateY:[12,0],opacity:[0,1],duration:450,delay:anime.stagger(40,{start:200})},150)
+    .add({targets:'#home-table tr',opacity:[0,1],duration:300,delay:anime.stagger(30,{start:250})},300);
+  anime({targets:['.pill .dot','.sidebar .foot .dot'],scale:[1,1.5],opacity:[1,.45],duration:1300,easing:'easeInOutQuad',loop:true,delay:1200});
+}
+</script>
+</body>
+</html>

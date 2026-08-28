@@ -51,3 +51,16 @@ Fase UI/UX RnD. Semua percobaan, error, dan keputusan dicatat di sini (English u
 ### Decisions
 ### Trial / errors
 ### Feedback loop
+## 2026-08-28 - Demo v0.2: game menu UI/UX direction
+
+### What happened
+- Ravi clarified: bukan "game UI visual" (sci-fi HUD) yang dimaksud, tapi **struktur menu UI/UX ala game** (navigasi antar screen, hub, sub-menu, selected state, modal, toast).
+- Built demo v0.2: sidebar menu groups (System/Operations/Infra), Home = hub tiles ala game main menu, per-screen tables + progress bars, right drawer detail, confirm modal, toast notifications. Monochrome ops console tetap, plus perilaku ala game.
+- Deployed: https://dudevkit.github.io/command-center/demo/v0.2/
+
+### Decisions
+- Keep monochrome + zinc tokens (ops-console-ui skill). Game feel = interaction pattern, not visual chrome.
+- Screen switching pakai anime.js fade+slide; progress bar animate; drawer slide-in; modal scale; toast slide-up.
+
+### Feedback loop (next)
+- Wait Ravi's comment: apakah menu grouping + hub tile + drawer pattern sudah mendekati bayangan "menu game" dia.

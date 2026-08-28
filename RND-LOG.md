@@ -64,3 +64,21 @@ Fase UI/UX RnD. Semua percobaan, error, dan keputusan dicatat di sini (English u
 
 ### Feedback loop (next)
 - Wait Ravi's comment: apakah menu grouping + hub tile + drawer pattern sudah mendekati bayangan "menu game" dia.
+
+## 2026-08-28 - anime.js documentation + skills
+
+### What happened
+- Ravi: read animejs.com/documentation fully, turn it into skill + subskills.
+- Docs are a SPA: main page is JS-rendered, but each subpage has `<article id="docs-info">` content. Fetched 86 subpages (all core topics: getting-started, animation, timeline, timer, svg, text, utils, easings, engine, scope, layout, draggable, events, animatable), parsed to markdown.
+- Created 2 skills under frontend/:
+  - `anime-js` - complete v4 guide + references (api-v4-cheatsheet, v3-to-v4-migration, patterns)
+  - `anime-js-hud-patterns` - HUD/sci-fi dashboard patterns (validated on demo v0.3)
+
+### Key findings
+- v4 is ESM-only, named imports, subpath imports. v3 (vendored in demos) uses global `anime()`.
+- Easing renamed: v3 `easeOutQuart` -> v4 `'out(4)'`.
+- v4 new: spring(), scrambleText(), splitText(), createLayout(), onScroll(), waapi.animate (3KB).
+- Migration table created for future upgrades.
+
+### Decisions
+- Demos stay on v3.2.2 vendored (working). Migration only for new builds or v4-only features.

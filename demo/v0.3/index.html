@@ -250,7 +250,7 @@ const innerGlow=new THREE.Mesh(
 );
 orbGroup.add(innerGlow);
 
-// wireframe shell
+// wireframe shell (vertices get noise displacement each frame)
 const shell=new THREE.Mesh(
   new THREE.IcosahedronGeometry(1.42,2),
   new THREE.MeshBasicMaterial({
@@ -266,6 +266,37 @@ const ringBig=new THREE.Mesh(
   new THREE.MeshBasicMaterial({color:0x4ee1ff,wireframe:true,transparent:true,opacity:.07,blending:THREE.AdditiveBlending,depthWrite:false})
 );
 orbGroup.add(ringBig);
+
+// per-vertex noise targets (resampled periodically for slow organic drift)
+const shellGeo=shell.geometry, ringGeo=ringBig.geometry;
+const shellBase=new Float32Array(shellGeo.attributes.position.array);
+const ringBase=new Float32Array(ringGeo.attributes.position.array);
+const shellTarget=new Float32Array(shellBase.length);
+const ringTarget=new Float32Array(ringBase.length);
+function resampleNoise(){
+  for(let i=0;i<shellBase.length;i++){
+    const nl=Math.random()*2-1;
+    shellTarget[i]=shellBase[i]*(1+.045*nl);
+  }
+  for(let i=0;i<ringBase.length;i++){
+    const nl=Math.random()*2-1;
+    ringTarget[i]=ringBase[i]*(1+.05*nl);
+  }
+}
+resampleNoise();
+let noiseTimer=0,noiseT=1;
+function updateNoise(dt){
+  // resample targets every ~520ms -> continuous morph, not snap
+  noiseTimer+=dt;
+  if(noiseTimer>0.52){noiseTimer=0;resampleNoise();noiseT=0;}
+  noiseT=Math.min(1,noiseT+dt*3.4);
+  const k=noiseT;
+  const sp=shellGeo.attributes.position.array, rp=ringGeo.attributes.position.array;
+  for(let i=0;i<sp.length;i++)sp[i]=shellBase[i]+(shellTarget[i]-shellBase[i])*k;
+  for(let i=0;i<rp.length;i++)rp[i]=ringBase[i]+(ringTarget[i]-ringBase[i])*k;
+  shellGeo.attributes.position.needsUpdate=true;
+  ringGeo.attributes.position.needsUpdate=true;
+}
 
 // orbit rings (torus, additive)
 function makeOrbit(radius,tilt,color,op){
@@ -375,6 +406,8 @@ let idleT=0;
 function tick(){
   const dt=Math.min(clock.getDelta(),.05);
   idleT+=dt;
+  // wireframe noise morph
+  updateNoise(dt);
   // auto gentle rotation when not dragging
   if(!dragging){rotY+=dt*.15;rotX+= (Math.sin(idleT*.3)*.08 - rotX)*.02;}
   orbGroup.rotation.y=rotY+state.px*.3;
